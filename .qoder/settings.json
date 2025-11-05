@@ -1,0 +1,14 @@
+{
+  "permissions": {
+    "ask": [
+      "Read(!/Users/hljy/Documents/Cline/aa/**)",
+      "Edit(!/Users/hljy/Documents/Cline/aa/**)"
+    ],
+    "allow": [
+      "Read(/Users/hljy/Documents/Cline/aa/**)",
+      "Edit(/Users/hljy/Documents/Cline/aa/**)"
+    ]
+  },
+  "memoryImport": {},
+  "monitoring": {}
+}

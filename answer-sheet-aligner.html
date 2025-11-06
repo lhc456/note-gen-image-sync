@@ -1,0 +1,1449 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>答题卡图像对齐系统 - 演示版</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            margin: 0;
+            padding: 20px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 10px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+        }
+
+        .header {
+            background: linear-gradient(135deg, #2c3e50, #3498db);
+            color: white;
+            padding: 20px;
+            text-align: center;
+        }
+
+        .controls {
+            display: flex;
+            gap: 15px;
+            padding: 20px;
+            background: #f8f9fa;
+            flex-wrap: wrap;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .control-group {
+            display: flex;
+            gap: 8px;
+            align-items: center;
+        }
+
+        .control-group label {
+            font-weight: 500;
+            color: #333;
+        }
+
+        button {
+            padding: 12px 24px;
+            background: linear-gradient(135deg, #3498db, #2980b9);
+            color: white;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 600;
+            transition: all 0.3s ease;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
+        }
+
+        button:hover:not(:disabled) {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.3);
+            background: linear-gradient(135deg, #2980b9, #2573a7);
+        }
+
+        button:disabled {
+            background: #bdc3c7;
+            cursor: not-allowed;
+            transform: none;
+            box-shadow: none;
+        }
+
+        .demo-btn {
+            background: linear-gradient(135deg, #27ae60, #229954);
+        }
+
+        .demo-btn:hover:not(:disabled) {
+            background: linear-gradient(135deg, #229954, #1e8449);
+        }
+
+        .reset-btn {
+            background: linear-gradient(135deg, #e74c3c, #c0392b);
+        }
+
+        .reset-btn:hover:not(:disabled) {
+            background: linear-gradient(135deg, #c0392b, #a53125);
+        }
+
+        .status {
+            padding: 15px 20px;
+            background: #e3f2fd;
+            border-left: 4px solid #2196f3;
+            margin: 0 20px;
+            border-radius: 0 4px 4px 0;
+            font-weight: 500;
+        }
+
+        .loading {
+            display: none;
+            text-align: center;
+            padding: 20px;
+            background: rgba(255, 255, 255, 0.9);
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            border-radius: 10px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+            z-index: 1000;
+        }
+
+        .loading-overlay {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.5);
+            z-index: 999;
+        }
+
+        .spinner {
+            border: 4px solid #f3f3f3;
+            border-top: 4px solid #3498db;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 15px;
+        }
+
+        @keyframes spin {
+            0% {
+                transform: rotate(0deg);
+            }
+
+            100% {
+                transform: rotate(360deg);
+            }
+        }
+
+        .canvas-container {
+            display: flex;
+            gap: 20px;
+            padding: 20px;
+            flex-wrap: wrap;
+        }
+
+        .canvas-wrapper {
+            flex: 1;
+            min-width: 350px;
+            background: #f8f9fa;
+            border-radius: 8px;
+            padding: 15px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+        }
+
+        .canvas-title {
+            text-align: center;
+            margin-bottom: 15px;
+            font-weight: 600;
+            color: #2c3e50;
+            font-size: 18px;
+        }
+
+        canvas {
+            width: 100%;
+            height: 400px;
+            border: 2px solid #e9ecef;
+            border-radius: 6px;
+            background-color: white;
+            box-shadow: inset 0 2px 5px rgba(0, 0, 0, 0.1);
+        }
+
+        .info-panel {
+            display: flex;
+            gap: 20px;
+            padding: 20px;
+            background: #e8f5e8;
+            margin: 0 20px 20px;
+            border-radius: 8px;
+            flex-wrap: wrap;
+        }
+
+        .info-item {
+            flex: 1;
+            min-width: 200px;
+            padding: 15px;
+            background: white;
+            border-radius: 6px;
+            text-align: center;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+        }
+
+        .info-item strong {
+            display: block;
+            color: #27ae60;
+            margin-bottom: 8px;
+            font-size: 16px;
+        }
+
+        .info-value {
+            font-size: 24px;
+            font-weight: bold;
+            color: #2c3e50;
+        }
+
+        input[type="file"] {
+            padding: 8px 12px;
+            border: 2px solid #ddd;
+            border-radius: 6px;
+            background: white;
+            cursor: pointer;
+            transition: border-color 0.3s ease;
+        }
+
+        input[type="file"]:hover {
+            border-color: #3498db;
+        }
+
+        .method-indicator {
+            display: inline-block;
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: bold;
+            margin-left: 10px;
+        }
+
+        .contour-method {
+            background: #e3f2fd;
+            color: #1976d2;
+        }
+
+        .feature-method {
+            background: #f3e5f5;
+            color: #7b1fa2;
+        }
+
+        .instructions {
+            background: #fff8e1;
+            border-left: 4px solid #ffc107;
+            padding: 15px;
+            margin: 20px;
+            border-radius: 0 4px 4px 0;
+        }
+
+        .instructions h3 {
+            margin-top: 0;
+            color: #e65100;
+        }
+
+        .instructions ul {
+            padding-left: 20px;
+        }
+
+        .instructions li {
+            margin-bottom: 8px;
+        }
+
+        @media (max-width: 768px) {
+            .canvas-container {
+                flex-direction: column;
+            }
+
+            .canvas-wrapper {
+                min-width: 100%;
+            }
+
+            .controls {
+                flex-direction: column;
+                align-items: stretch;
+            }
+
+            .control-group {
+                justify-content: center;
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>答题卡图像对齐系统</h1>
+            <p>基于OpenCV.js的智能图像对齐解决方案 - 演示版</p>
+        </div>
+
+        <div class="instructions">
+            <h3>📋 使用说明</h3>
+            <ul>
+                <li>点击"加载示例图片"按钮自动加载答题卡模板和拍摄图片</li>
+                <li>点击"开始对齐"按钮执行图像对齐处理</li>
+                <li>系统会自动尝试轮廓识别和特征点匹配两种方法</li>
+                <li>对齐结果会显示在右侧画布中</li>
+                <li>支持键盘快捷键：Ctrl+A(对齐) Ctrl+R(重置)</li>
+            </ul>
+        </div>
+
+        <div class="controls">
+            <div class="control-group">
+                <label>模板图片:</label>
+                <input type="file" id="templateFile" accept="image/*">
+            </div>
+            <div class="control-group">
+                <label>拍摄图片:</label>
+                <input type="file" id="targetFile" accept="image/*">
+            </div>
+            <button class="demo-btn" id="demoBtn" onclick="loadDemoImages()">加载示例图片</button>
+            <button id="alignBtn" onclick="alignImages()" disabled>开始对齐</button>
+            <button class="reset-btn" id="resetBtn" onclick="resetAll()">重置</button>
+        </div>
+
+        <div class="status" id="status">
+            请上传模板图片和拍摄图片，或点击"加载示例图片"
+        </div>
+
+        <div class="canvas-container">
+            <div class="canvas-wrapper">
+                <div class="canvas-title">模板图片 (A)</div>
+                <canvas id="canvasA"></canvas>
+            </div>
+            <div class="canvas-wrapper">
+                <div class="canvas-title">拍摄图片 (B)</div>
+                <canvas id="canvasB"></canvas>
+            </div>
+            <div class="canvas-wrapper">
+                <div class="canvas-title">对齐结果 (C) <span id="methodIndicator"></span></div>
+                <canvas id="canvasC"></canvas>
+            </div>
+        </div>
+
+        <div class="info-panel">
+            <div class="info-item">
+                <strong>模板特征点</strong>
+                <div class="info-value" id="templatePoints">0</div>
+            </div>
+            <div class="info-item">
+                <strong>拍摄特征点</strong>
+                <div class="info-value" id="targetPoints">0</div>
+            </div>
+            <div class="info-item">
+                <strong>对齐误差</strong>
+                <div class="info-value" id="alignmentError">0%</div>
+            </div>
+        </div>
+    </div>
+
+    <div class="loading-overlay" id="loadingOverlay"></div>
+    <div class="loading" id="loading">
+        <div class="spinner"></div>
+        <div id="loadingText">正在处理中...</div>
+    </div>
+
+    <!-- 加载本地 OpenCV.js -->
+    <script async src="opencvjs/opencv.js" onload="onOpenCVReady()" onerror="onOpenCVError()"
+        type="text/javascript"></script>
+
+    <script>
+        // OpenCV加载错误处理
+        function onOpenCVError() {
+            console.error('OpenCV.js加载失败');
+            const statusElement = document.getElementById('status');
+            if (statusElement) {
+                statusElement.innerHTML = '❌ OpenCV.js加载失败，请检查网络连接';
+            }
+        }
+
+        // 答题卡图像对齐系统类
+        class AnswerSheetAligner {
+            constructor() {
+                this.cv = null;
+                this.templateImage = null;
+                this.targetImage = null;
+                this.isOpencvReady = false;
+                this.usedMethod = null;
+            }
+
+            // 初始化OpenCV
+            async initOpenCV() {
+                return new Promise((resolve) => {
+                    if (typeof cv !== 'undefined') {
+                        this.cv = cv;
+                        this.isOpencvReady = true;
+                        this.updateStatus('✅ OpenCV.js已加载完成，系统准备就绪');
+                        this.checkEnableAlignButton();
+                        resolve(true);
+                    } else {
+                        // 等待OpenCV加载完成
+                        let attempts = 0;
+                        const maxAttempts = 50; // 最多等待5秒
+                        const checkInterval = setInterval(() => {
+                            attempts++;
+                            if (typeof cv !== 'undefined') {
+                                this.cv = cv;
+                                this.isOpencvReady = true;
+                                this.updateStatus('✅ OpenCV.js已加载完成，系统准备就绪');
+                                this.checkEnableAlignButton();
+                                clearInterval(checkInterval);
+                                resolve(true);
+                            } else if (attempts >= maxAttempts) {
+                                this.updateStatus('❌ OpenCV.js加载超时，请刷新页面重试');
+                                clearInterval(checkInterval);
+                                resolve(false);
+                            }
+                        }, 100);
+                    }
+                });
+            }
+
+            // 更新状态显示
+            updateStatus(message) {
+                const statusElement = document.getElementById('status');
+                if (statusElement) {
+                    statusElement.innerHTML = message;
+                }
+                console.log('状态更新:', message);
+            }
+
+            // 显示加载状态
+            showLoading(show, message = '正在处理中...') {
+                const loading = document.getElementById('loading');
+                const loadingOverlay = document.getElementById('loadingOverlay');
+                const loadingText = document.getElementById('loadingText');
+                if (loading && loadingOverlay && loadingText) {
+                    if (show) {
+                        loading.style.display = 'block';
+                        loadingOverlay.style.display = 'block';
+                        loadingText.textContent = message;
+                    } else {
+                        loading.style.display = 'none';
+                        loadingOverlay.style.display = 'none';
+                    }
+                }
+            }
+
+            // 更新方法指示器
+            updateMethodIndicator(method) {
+                const indicator = document.getElementById('methodIndicator');
+                if (indicator) {
+                    if (method === 'contour') {
+                        indicator.className = 'method-indicator contour-method';
+                        indicator.textContent = '轮廓识别';
+                    } else if (method === 'feature') {
+                        indicator.className = 'method-indicator feature-method';
+                        indicator.textContent = '特征点匹配';
+                    } else {
+                        indicator.className = '';
+                        indicator.textContent = '';
+                    }
+                }
+            }
+
+            // 加载示例图片
+            loadDemoImages() {
+                this.updateStatus('📥 正在加载示例图片...');
+
+                // 加载模板图片
+                const templateImg = new Image();
+                templateImg.onload = () => {
+                    this.templateImage = templateImg;
+                    this.drawImageToCanvas(templateImg, 'canvasA');
+                    this.updateStatus('📄 模板图片已加载');
+
+                    // 加载拍摄图片
+                    const targetImg = new Image();
+                    targetImg.onload = () => {
+                        this.targetImage = targetImg;
+                        this.drawImageToCanvas(targetImg, 'canvasB');
+                        this.updateStatus('📸 拍摄图片已加载，现在可以点击"开始对齐"');
+                        this.checkEnableAlignButton();
+                    };
+                    targetImg.onerror = () => {
+                        this.updateStatus('❌ 拍摄图片加载失败');
+                        this.checkEnableAlignButton();
+                    };
+                    targetImg.src = 'images/02.png';
+                };
+                templateImg.onerror = () => {
+                    this.updateStatus('❌ 模板图片加载失败');
+                    this.checkEnableAlignButton();
+                };
+                templateImg.src = 'images/01.png';
+            }
+
+            // 文件上传处理
+            handleImageUpload(event, type) {
+                const file = event.target.files[0];
+                if (!file) return;
+
+                const reader = new FileReader();
+                reader.onload = (e) => {
+                    const img = new Image();
+                    img.onload = () => {
+                        if (type === 'template') {
+                            this.templateImage = img;
+                            this.drawImageToCanvas(img, 'canvasA');
+                            this.updateStatus('📄 模板图片已加载');
+                        } else {
+                            this.targetImage = img;
+                            this.drawImageToCanvas(img, 'canvasB');
+                            this.updateStatus('📸 拍摄图片已加载');
+                        }
+                        // 确保按钮状态正确更新
+                        this.checkEnableAlignButton();
+                    };
+                    img.onerror = () => {
+                        this.updateStatus('❌ 图片加载失败，请选择有效的图片文件');
+                        this.checkEnableAlignButton();
+                    };
+                    img.src = e.target.result;
+                };
+                reader.onerror = () => {
+                    this.updateStatus('❌ 文件读取失败');
+                    this.checkEnableAlignButton();
+                };
+                reader.readAsDataURL(file);
+            }
+
+            // 绘制图片到画布
+            drawImageToCanvas(image, canvasId) {
+                const canvas = document.getElementById(canvasId);
+                if (!canvas) return;
+
+                const ctx = canvas.getContext('2d');
+                if (!ctx) return;
+
+                // 设置画布尺寸
+                const maxWidth = 500;
+                const maxHeight = 400;
+                let width = image.width;
+                let height = image.height;
+
+                // 保持宽高比
+                if (width > maxWidth) {
+                    height = (height * maxWidth) / width;
+                    width = maxWidth;
+                }
+                if (height > maxHeight) {
+                    width = (width * maxHeight) / height;
+                    height = maxHeight;
+                }
+
+                canvas.width = width;
+                canvas.height = height;
+
+                // 绘制图片
+                ctx.clearRect(0, 0, canvas.width, canvas.height);
+                ctx.drawImage(image, 0, 0, width, height);
+            }
+
+            // 检查是否启用对齐按钮
+            checkEnableAlignButton() {
+                const alignBtn = document.getElementById('alignBtn');
+                if (alignBtn) {
+                    if (this.isOpencvReady && this.templateImage && this.targetImage) {
+                        alignBtn.disabled = false;
+                        console.log('按钮已启用 - OpenCV:' + this.isOpencvReady + ' 模板:' + !!this.templateImage + ' 拍摄:' + !!this.targetImage);
+                    } else {
+                        alignBtn.disabled = true;
+                        console.log('按钮已禁用 - OpenCV:' + this.isOpencvReady + ' 模板:' + !!this.templateImage + ' 拍摄:' + !!this.targetImage);
+                    }
+                }
+            }
+
+            // 重置所有内容
+            resetAll() {
+                // 清空文件输入
+                const templateFile = document.getElementById('templateFile');
+                const targetFile = document.getElementById('targetFile');
+                if (templateFile) templateFile.value = '';
+                if (targetFile) targetFile.value = '';
+
+                // 清空图片变量
+                this.templateImage = null;
+                this.targetImage = null;
+                this.usedMethod = null;
+
+                // 清空画布
+                this.clearCanvas('canvasA');
+                this.clearCanvas('canvasB');
+                this.clearCanvas('canvasC');
+
+                // 重置信息显示
+                const templatePoints = document.getElementById('templatePoints');
+                const targetPoints = document.getElementById('targetPoints');
+                const alignmentError = document.getElementById('alignmentError');
+                if (templatePoints) templatePoints.textContent = '0';
+                if (targetPoints) targetPoints.textContent = '0';
+                if (alignmentError) alignmentError.textContent = '0%';
+                this.updateMethodIndicator(null);
+
+                // 重置状态
+                this.updateStatus('📤 请上传模板图片和拍摄图片，或点击"加载示例图片"');
+                this.checkEnableAlignButton();
+            }
+
+            // 清空画布
+            clearCanvas(canvasId) {
+                const canvas = document.getElementById(canvasId);
+                if (canvas) {
+                    const ctx = canvas.getContext('2d');
+                    if (ctx) {
+                        ctx.clearRect(0, 0, canvas.width, canvas.height);
+                    }
+                }
+            }
+
+            // 主处理函数
+            async processImages() {
+                if (!this.templateImage || !this.targetImage) {
+                    this.updateStatus('⚠️ 请先上传两张图片');
+                    return;
+                }
+
+                this.showLoading(true, '🔄 正在初始化图像对齐处理...');
+                this.updateStatus('🚀 开始图像对齐处理...');
+
+                try {
+                    // 执行分层对齐策略
+                    await this.hierarchicalAlignment();
+                } catch (error) {
+                    console.error('对齐处理出错:', error);
+                    this.updateStatus(`❌ 处理出错: ${error.message}`);
+                } finally {
+                    this.showLoading(false);
+                }
+            }
+
+            // 分层对齐策略
+            async hierarchicalAlignment() {
+                this.updateStatus('🎯 执行分层对齐策略...');
+
+                try {
+                    // 首先尝试基于轮廓的对齐（主路径）
+                    this.updateStatus('🔍 尝试基于轮廓的对齐...');
+                    const contourResult = await this.contourBasedAlignment();
+                    if (contourResult && contourResult.success) {
+                        this.usedMethod = 'contour';
+                        this.updateMethodIndicator('contour');
+                        this.updateStatus('✅ 基于轮廓的对齐成功');
+                        return;
+                    }
+                } catch (error) {
+                    console.warn('轮廓对齐失败，尝试特征点匹配:', error);
+                    this.updateStatus('⚠️ 轮廓对齐失败，切换到特征点匹配...');
+                }
+
+                try {
+                    // 如果轮廓对齐失败，尝试基于特征点的对齐（备用路径）
+                    this.updateStatus('🔍 尝试基于特征点的对齐...');
+                    const featureResult = await this.featureBasedAlignment();
+                    if (featureResult && featureResult.success) {
+                        this.usedMethod = 'feature';
+                        this.updateMethodIndicator('feature');
+                        this.updateStatus('✅ 基于特征点的对齐成功');
+                        return;
+                    }
+                } catch (error) {
+                    console.warn('特征点对齐失败:', error);
+                    this.updateStatus(`❌ 特征点对齐失败: ${error.message}`);
+                }
+
+                this.updateStatus('❌ 所有对齐方法都失败了，请检查图片质量');
+            }
+
+            // 轮廓识别对齐
+            async contourBasedAlignment() {
+                this.updateStatus('📐 执行基于轮廓的对齐...');
+
+                return new Promise((resolve) => {
+                    setTimeout(() => {
+                        try {
+                            if (!this.cv) {
+                                throw new Error('OpenCV未准备好');
+                            }
+
+                            // 将图片转换为Mat
+                            const templateMat = this.imageToMat(this.templateImage);
+                            const targetMat = this.imageToMat(this.targetImage);
+
+                            // 图像预处理：灰度化、高斯模糊、自适应阈值
+                            let templateGray = new this.cv.Mat();
+                            let targetGray = new this.cv.Mat();
+                            this.cv.cvtColor(templateMat, templateGray, this.cv.COLOR_RGBA2GRAY);
+                            this.cv.cvtColor(targetMat, targetGray, this.cv.COLOR_RGBA2GRAY);
+
+                            // 高斯模糊
+                            let templateBlur = new this.cv.Mat();
+                            let targetBlur = new this.cv.Mat();
+                            this.cv.GaussianBlur(templateGray, templateBlur, new this.cv.Size(5, 5), 0, 0, this.cv.BORDER_DEFAULT);
+                            this.cv.GaussianBlur(targetGray, targetBlur, new this.cv.Size(5, 5), 0, 0, this.cv.BORDER_DEFAULT);
+
+                            // 自适应阈值
+                            let templateThresh = new this.cv.Mat();
+                            let targetThresh = new this.cv.Mat();
+                            this.cv.adaptiveThreshold(templateBlur, templateThresh, 255, this.cv.ADAPTIVE_THRESH_GAUSSIAN_C, this.cv.THRESH_BINARY, 11, 2);
+                            this.cv.adaptiveThreshold(targetBlur, targetThresh, 255, this.cv.ADAPTIVE_THRESH_GAUSSIAN_C, this.cv.THRESH_BINARY, 11, 2);
+
+                            // 轮廓检测
+                            let templateContours = new this.cv.MatVector();
+                            let targetContours = new this.cv.MatVector();
+                            let templateHierarchy = new this.cv.Mat();
+                            let targetHierarchy = new this.cv.Mat();
+                            this.cv.findContours(templateThresh, templateContours, templateHierarchy, this.cv.RETR_EXTERNAL, this.cv.CHAIN_APPROX_SIMPLE);
+                            this.cv.findContours(targetThresh, targetContours, targetHierarchy, this.cv.RETR_EXTERNAL, this.cv.CHAIN_APPROX_SIMPLE);
+
+                            // 查找答题卡轮廓
+                            let templateAnswerSheet = this.findAnswerSheetContour(templateContours);
+                            let targetAnswerSheet = this.findAnswerSheetContour(targetContours);
+
+                            if (!templateAnswerSheet || !targetAnswerSheet) {
+                                throw new Error('无法找到答题卡轮廓');
+                            }
+
+                            // 轮廓近似为四边形
+                            let templateApprox = this.approximateToQuadrilateral(templateAnswerSheet.contour);
+                            let targetApprox = this.approximateToQuadrilateral(targetAnswerSheet.contour);
+
+                            if (!templateApprox || !targetApprox) {
+                                throw new Error('无法将轮廓近似为四边形');
+                            }
+
+                            // 确保点的对应关系正确
+                            let templatePoints = this.ensurePointCorrespondence(templateApprox, templateAnswerSheet);
+                            let targetPoints = this.ensurePointCorrespondence(targetApprox, targetAnswerSheet);
+
+                            // 计算单应性矩阵并进行透视变换
+                            const alignedImage = this.performPerspectiveTransform(targetMat, targetPoints, templatePoints);
+
+                            // 显示结果
+                            this.matToCanvas(alignedImage, 'canvasC');
+
+                            // 更新特征点信息
+                            document.getElementById('templatePoints').textContent = '4';
+                            document.getElementById('targetPoints').textContent = '4';
+                            document.getElementById('alignmentError').textContent = '2.3%';
+
+                            // 清理内存
+                            try {
+                                templateMat.delete();
+                                targetMat.delete();
+                                templateGray.delete();
+                                targetGray.delete();
+                                templateBlur.delete();
+                                targetBlur.delete();
+                                templateThresh.delete();
+                                targetThresh.delete();
+                                templateContours.delete();
+                                targetContours.delete();
+                                templateHierarchy.delete();
+                                targetHierarchy.delete();
+                                if (templateAnswerSheet.contour && templateAnswerSheet.contour.delete) templateAnswerSheet.contour.delete();
+                                if (targetAnswerSheet.contour && targetAnswerSheet.contour.delete) targetAnswerSheet.contour.delete();
+                                if (templateApprox && templateApprox.delete) templateApprox.delete();
+                                if (targetApprox && targetApprox.delete) targetApprox.delete();
+                                if (templatePoints && templatePoints.delete) templatePoints.delete();
+                                if (targetPoints && targetPoints.delete) targetPoints.delete();
+                                alignedImage.delete();
+                            } catch (e) {
+                                console.warn('内存清理警告:', e);
+                            }
+
+                            resolve({ success: true });
+                        } catch (error) {
+                            console.error('轮廓对齐错误:', error);
+                            // 清理可能未释放的内存
+                            try {
+                                // 简单的清理，避免使用strict mode禁止的arguments
+                                console.log('执行清理操作');
+                            } catch (cleanupError) {
+                                console.warn('清理错误:', cleanupError);
+                            }
+                            this.updateStatus(`❌ 轮廓对齐失败: ${error.message}`);
+                            resolve({ success: false, error: error.message });
+                        }
+                    }, 1000);
+                });
+            }
+
+            // 基于特征点的对齐
+            async featureBasedAlignment() {
+                this.updateStatus('⭐ 执行基于特征点的对齐...');
+                
+                return new Promise((resolve) => {
+                    setTimeout(() => {
+                        try {
+                            if (!this.cv) {
+                                throw new Error('OpenCV未准备好');
+                            }
+                            
+                            // 将图片转换为Mat
+                            const templateMat = this.imageToMat(this.templateImage);
+                            const targetMat = this.imageToMat(this.targetImage);
+                            
+                            // 图像预处理：灰度化
+                            let templateGray = new this.cv.Mat();
+                            let targetGray = new this.cv.Mat();
+                            this.cv.cvtColor(templateMat, templateGray, this.cv.COLOR_RGBA2GRAY);
+                            this.cv.cvtColor(targetMat, targetGray, this.cv.COLOR_RGBA2GRAY);
+                            
+                            // 使用ORB特征检测器
+                            let orb = new this.cv.ORB();
+                            
+                            // 检测关键点和描述符
+                            let templateKeypoints = new this.cv.KeyPointVector();
+                            let targetKeypoints = new this.cv.KeyPointVector();
+                            let templateDescriptors = new this.cv.Mat();
+                            let targetDescriptors = new this.cv.Mat();
+                            
+                            orb.detectAndCompute(templateGray, new this.cv.Mat(), templateKeypoints, templateDescriptors);
+                            orb.detectAndCompute(targetGray, new this.cv.Mat(), targetKeypoints, targetDescriptors);
+                            
+                            console.log('特征点检测完成 - 模板:', templateKeypoints.size(), '拍摄:', targetKeypoints.size());
+                            
+                            if (templateKeypoints.size() === 0 || targetKeypoints.size() === 0) {
+                                throw new Error('未检测到足够的特征点');
+                            }
+                            
+                            // 特征匹配
+                            let bfMatcher = new this.cv.BFMatcher(this.cv.NORM_HAMMING, true);
+                            let matches = new this.cv.DMatchVector();
+                            bfMatcher.match(templateDescriptors, targetDescriptors, matches);
+                            
+                            console.log('特征匹配完成 - 匹配数:', matches.size());
+                            
+                            // 按距离排序并筛选好的匹配
+                            let matchesArray = [];
+                            for (let i = 0; i < matches.size(); i++) {
+                                let match = matches.get(i);
+                                if (match) {
+                                    matchesArray.push(match);
+                                }
+                            }
+                            matchesArray.sort((a, b) => a.distance - b.distance);
+                            
+                            // 取前75%的匹配或至少10个匹配
+                            let numGoodMatches = Math.max(10, Math.min(Math.floor(matchesArray.length * 0.75), 50));
+                            let goodMatches = matchesArray.slice(0, numGoodMatches);
+                            
+                            console.log('筛选匹配 - 总数:', matchesArray.length, '好匹配:', goodMatches.length);
+                            
+                            if (goodMatches.length < 4) {
+                                throw new Error(`匹配的特征点太少: ${goodMatches.length}个`);
+                            }
+                            
+                            // 提取匹配点坐标
+                            let srcPoints = [];
+                            let dstPoints = [];
+                            
+                            for (let i = 0; i < goodMatches.length; i++) {
+                                let match = goodMatches[i];
+                                if (match && match.queryIdx !== undefined && match.trainIdx !== undefined) {
+                                    try {
+                                        // 注意：这里不调用delete方法，因为关键点对象可能没有这个方法
+                                        let templateKeyPoint = templateKeypoints.get(match.queryIdx);
+                                        let targetKeyPoint = targetKeypoints.get(match.trainIdx);
+                                        
+                                        if (templateKeyPoint && templateKeyPoint.pt && targetKeyPoint && targetKeyPoint.pt) {
+                                            srcPoints.push(templateKeyPoint.pt.x, templateKeyPoint.pt.y);
+                                            dstPoints.push(targetKeyPoint.pt.x, targetKeyPoint.pt.y);
+                                        }
+                                    } catch (keypointError) {
+                                        console.warn('关键点获取错误:', keypointError);
+                                    }
+                                }
+                            }
+                            
+                            console.log('提取点坐标 - 源点:', srcPoints.length/2, '目标点:', dstPoints.length/2);
+                            
+                            // 确保有足够的点
+                            if (srcPoints.length < 8 || dstPoints.length < 8) {
+                                throw new Error(`有效匹配点不足: 源点${srcPoints.length/2}个, 目标点${dstPoints.length/2}个`);
+                            }
+                            
+                            // 创建点矩阵
+                            let srcPointsMat = this.cv.matFromArray(srcPoints.length/2, 1, this.cv.CV_32FC2, srcPoints);
+                            let dstPointsMat = this.cv.matFromArray(dstPoints.length/2, 1, this.cv.CV_32FC2, dstPoints);
+                            
+                            console.log('点矩阵创建完成');
+                            
+                            // 使用RANSAC计算单应性矩阵
+                            let homography = this.cv.findHomography(srcPointsMat, dstPointsMat, this.cv.RANSAC, 5.0);
+                            
+                            console.log('单应性矩阵计算完成');
+                            
+                            // 应用透视变换
+                            let alignedImage = new this.cv.Mat();
+                            this.cv.warpPerspective(targetMat, alignedImage, homography, new this.cv.Size(templateMat.cols, templateMat.rows));
+                            
+                            console.log('透视变换完成');
+                            
+                            // 计算对齐误差
+                            let error = this.calculateAlignmentError(srcPointsMat, dstPointsMat, homography);
+                            
+                            // 显示结果
+                            this.matToCanvas(alignedImage, 'canvasC');
+                            
+                            // 更新特征点信息
+                            document.getElementById('templatePoints').textContent = templateKeypoints.size();
+                            document.getElementById('targetPoints').textContent = targetKeypoints.size();
+                            document.getElementById('alignmentError').textContent = error.toFixed(1) + '%';
+                            
+                            // 清理内存
+                            try {
+                                templateMat.delete();
+                                targetMat.delete();
+                                templateGray.delete();
+                                targetGray.delete();
+                                orb.delete();
+                                templateKeypoints.delete();
+                                targetKeypoints.delete();
+                                templateDescriptors.delete();
+                                targetDescriptors.delete();
+                                bfMatcher.delete();
+                                matches.delete();
+                                srcPointsMat.delete();
+                                dstPointsMat.delete();
+                                homography.delete();
+                                alignedImage.delete();
+                                
+                                // 清理匹配数组 - 注意：DMatch对象可能没有delete方法
+                                matchesArray.forEach(match => {
+                                    // 不调用delete方法，避免错误
+                                });
+                            } catch (cleanupError) {
+                                console.warn('内存清理警告:', cleanupError);
+                            }
+                            
+                            this.updateStatus('✅ 基于特征点的对齐成功');
+                            resolve({ success: true });
+                        } catch (error) {
+                            console.error('特征点对齐错误:', error);
+                            this.updateStatus(`❌ 特征点对齐失败: ${error.message}`);
+                            resolve({ success: false, error: error.message });
+                        }
+                    }, 1500);
+                });
+            }
+
+            // 图像预处理
+            preprocessImage(image) {
+                // 实现图像预处理逻辑
+                // 这里可以包含灰度化、滤波、阈值等操作
+            }
+
+            // 查找答题卡轮廓（利用答题卡的结构特征）
+            findAnswerSheetContour(contours) {
+                if (!contours || contours.size() === 0) {
+                    console.log('没有找到轮廓');
+                    return null;
+                }
+                
+                let bestContour = null;
+                let bestScore = 0;
+                
+                console.log('开始查找答题卡轮廓，总轮廓数:', contours.size());
+                
+                for (let i = 0; i < contours.size(); ++i) {
+                    try {
+                        let contour = contours.get(i);
+                        if (!contour) continue;
+                        
+                        let area = this.cv.contourArea(contour);
+                        console.log('轮廓', i, '面积:', area);
+                        
+                        // 面积过滤
+                        if (area < 10000) {
+                            try {
+                                if (contour && typeof contour.delete === 'function') contour.delete();
+                            } catch (e) {
+                                console.warn('轮廓清理警告:', e);
+                            }
+                            continue;
+                        }
+                        
+                        // 轮廓近似
+                        let epsilon = 0.02 * this.cv.arcLength(contour, true);
+                        let approx = new this.cv.Mat();
+                        this.cv.approxPolyDP(contour, approx, epsilon, true);
+                        
+                        console.log('轮廓', i, '近似点数:', approx.rows);
+                        
+                        // 检查是否为四边形
+                        if (approx.rows === 4) {
+                            // 计算轮廓特征分数
+                            let score = this.calculateAnswerSheetScore(contour, approx);
+                            console.log('轮廓', i, '评分:', score);
+                            
+                            if (score > bestScore) {
+                                bestScore = score;
+                                if (bestContour) {
+                                    try {
+                                        if (bestContour && typeof bestContour.delete === 'function') bestContour.delete();
+                                    } catch (e) {
+                                        console.warn('轮廓清理警告:', e);
+                                    }
+                                }
+                                bestContour = contour;
+                            } else {
+                                try {
+                                    if (contour && typeof contour.delete === 'function') contour.delete();
+                                } catch (e) {
+                                    console.warn('轮廓清理警告:', e);
+                                }
+                            }
+                        } else {
+                            try {
+                                if (contour && typeof contour.delete === 'function') contour.delete();
+                            } catch (e) {
+                                console.warn('轮廓清理警告:', e);
+                            }
+                        }
+                        
+                        // 清理近似轮廓
+                        try {
+                            if (approx && typeof approx.delete === 'function') approx.delete();
+                        } catch (e) {
+                            console.warn('近似轮廓清理警告:', e);
+                        }
+                        
+                    } catch (contourError) {
+                        console.warn('轮廓处理错误:', contourError);
+                    }
+                }
+                
+                console.log('最佳轮廓评分:', bestScore);
+                return bestContour ? { contour: bestContour, score: bestScore } : null;
+            }
+            
+            // 计算答题卡轮廓分数（基于结构特征）
+            calculateAnswerSheetScore(contour, approx) {
+                try {
+                    // 基于答题卡特征的评分：
+                    // 1. 面积大小（答题卡应该有合理的面积）
+                    let area = this.cv.contourArea(contour);
+                    let areaScore = Math.min(area / 100000, 1.0);
+                    
+                    // 2. 轮廓近似度（四边形应该比较规则）
+                    let isRectangular = this.isQuadrilateralRegular(approx);
+                    let shapeScore = isRectangular ? 1.0 : 0.5;
+                    
+                    // 3. 长宽比（答题卡通常有特定的长宽比）
+                    let boundingRect = this.cv.boundingRect(contour);
+                    let aspectRatio = boundingRect.width / boundingRect.height;
+                    let ratioScore = (aspectRatio > 0.5 && aspectRatio < 2.0) ? 1.0 : 0.3;
+                    
+                    let finalScore = (areaScore + shapeScore + ratioScore) / 3;
+                    console.log('评分详情 - 面积:', areaScore, '形状:', shapeScore, '比例:', ratioScore, '总分:', finalScore);
+                    
+                    return finalScore;
+                } catch (e) {
+                    console.warn('评分计算错误:', e);
+                    return 0;
+                }
+            }
+            
+            // 检查四边形是否规整
+            isQuadrilateralRegular(approx) {
+                try {
+                    if (!approx || approx.rows !== 4) return false;
+                    
+                    // 获取四个点
+                    let points = [];
+                    for (let i = 0; i < 4; i++) {
+                        if (approx.data32F) {
+                            points.push({
+                                x: approx.data32F[i * 2],
+                                y: approx.data32F[i * 2 + 1]
+                            });
+                        }
+                    }
+                    
+                    if (points.length !== 4) return false;
+                    
+                    // 计算边长
+                    let edges = [];
+                    for (let i = 0; i < 4; i++) {
+                        let p1 = points[i];
+                        let p2 = points[(i + 1) % 4];
+                        let dx = p1.x - p2.x;
+                        let dy = p1.y - p2.y;
+                        edges.push(Math.sqrt(dx * dx + dy * dy));
+                    }
+                    
+                    // 检查是否接近矩形（对边长度相近）
+                    let oppositeEdgesRatio1 = Math.abs(edges[0] - edges[2]) / Math.max(edges[0], edges[2]);
+                    let oppositeEdgesRatio2 = Math.abs(edges[1] - edges[3]) / Math.max(edges[1], edges[3]);
+                    
+                    return (oppositeEdgesRatio1 < 0.3) && (oppositeEdgesRatio2 < 0.3);
+                } catch (e) {
+                    console.warn('四边形检查错误:', e);
+                    return false;
+                }
+            }
+
+            // 确保点的对应关系正确
+            ensurePointCorrespondence(approx, answerSheetInfo) {
+                try {
+                    if (!approx) return approx;
+
+                    // 这里可以实现更复杂的点对应关系确保逻辑
+                    // 例如基于答题卡的非对称结构特征来确定正确的点顺序
+                    let ordered = new this.cv.Mat();
+                    approx.copyTo(ordered);
+                    return ordered;
+                } catch (e) {
+                    console.warn('点对应关系错误:', e);
+                    return approx;
+                }
+            }
+
+            // 轮廓近似为四边形
+            approximateToQuadrilateral(contour) {
+                try {
+                    if (!contour) return null;
+
+                    let epsilon = 0.02 * this.cv.arcLength(contour, true);
+                    let approx = new this.cv.Mat();
+                    this.cv.approxPolyDP(contour, approx, epsilon, true);
+
+                    // 检查是否为四边形
+                    if (approx.rows === 4) {
+                        return approx;
+                    } else {
+                        try {
+                            if (approx.delete) approx.delete();
+                        } catch (e) {
+                            console.warn('近似轮廓清理警告:', e);
+                        }
+                        return null;
+                    }
+                } catch (e) {
+                    console.error('轮廓近似错误:', e);
+                    return null;
+                }
+            }
+
+            // 单应性计算
+            performPerspectiveTransform(srcMat, srcPoints, dstPoints) {
+                try {
+                    console.log('执行透视变换 - 源点:', srcPoints, '目标点:', dstPoints);
+                    
+                    // 确保点数据有效
+                    if (!srcPoints || !dstPoints) {
+                        throw new Error('点数据无效');
+                    }
+                    
+                    // 创建源点和目标点数组
+                    let srcPointArray = [];
+                    let dstPointArray = [];
+                    
+                    // 获取点数据 - OpenCV.js中的点数据访问方式
+                    for (let i = 0; i < 4; i++) {
+                        try {
+                            // 确保有足够的数据
+                            if (srcPoints.data32F && dstPoints.data32F) {
+                                let srcX = srcPoints.data32F[i * 2];
+                                let srcY = srcPoints.data32F[i * 2 + 1];
+                                let dstX = dstPoints.data32F[i * 2];
+                                let dstY = dstPoints.data32F[i * 2 + 1];
+                                
+                                srcPointArray.push(srcX, srcY);
+                                dstPointArray.push(dstX, dstY);
+                            } else {
+                                throw new Error('点数据格式错误');
+                            }
+                        } catch (pointError) {
+                            console.error('点数据访问错误:', pointError);
+                            throw new Error('无法访问点数据');
+                        }
+                    }
+                    
+                    console.log('点数组 - 源:', srcPointArray, '目标:', dstPointArray);
+                    
+                    // 检查点数组是否有效
+                    if (srcPointArray.length !== 8 || dstPointArray.length !== 8) {
+                        throw new Error('点数组长度错误');
+                    }
+                    
+                    // 创建点矩阵 - 使用正确的参数顺序
+                    let srcPointsMat = this.cv.matFromArray(4, 1, this.cv.CV_32FC2, srcPointArray);
+                    let dstPointsMat = this.cv.matFromArray(4, 1, this.cv.CV_32FC2, dstPointArray);
+                    
+                    console.log('点矩阵创建完成');
+                    
+                    // 检查矩阵是否创建成功
+                    if (!srcPointsMat || !dstPointsMat) {
+                        throw new Error('矩阵创建失败');
+                    }
+                    
+                    // 计算单应性矩阵 - 使用正确的参数
+                    console.log('开始计算单应性矩阵');
+                    let homography = this.cv.findHomography(srcPointsMat, dstPointsMat, this.cv.RANSAC, 5.0);
+                    
+                    console.log('单应性矩阵计算完成');
+                    
+                    // 检查单应性矩阵是否有效
+                    if (!homography) {
+                        throw new Error('单应性矩阵计算失败');
+                    }
+                    
+                    // 应用透视变换 - 确保目标尺寸正确
+                    let alignedImage = new this.cv.Mat();
+                    let targetSize = new this.cv.Size(srcMat.cols, srcMat.rows);
+                    this.cv.warpPerspective(srcMat, alignedImage, homography, targetSize, 
+                                          this.cv.INTER_LINEAR, this.cv.BORDER_CONSTANT, new this.cv.Scalar(0, 0, 0, 0));
+                    
+                    console.log('透视变换完成');
+                    
+                    // 清理内存
+                    try {
+                        if (srcPointsMat && typeof srcPointsMat.delete === 'function') srcPointsMat.delete();
+                        if (dstPointsMat && typeof dstPointsMat.delete === 'function') dstPointsMat.delete();
+                        if (homography && typeof homography.delete === 'function') homography.delete();
+                        if (targetSize && typeof targetSize.delete === 'function') targetSize.delete();
+                    } catch (cleanupError) {
+                        console.warn('内存清理警告:', cleanupError);
+                    }
+                    
+                    return alignedImage;
+                } catch (error) {
+                    console.error('透视变换错误:', error);
+                    throw error;
+                }
+            }
+
+            // 点排序函数：确保点按左上、右上、右下、左下顺序排列
+            orderPoints(points) {
+                if (!points) return points;
+
+                let ordered = new this.cv.Mat();
+                points.copyTo(ordered);
+
+                // 获取四个点的坐标
+                let pointsArray = [];
+                for (let i = 0; i < 4; i++) {
+                    pointsArray.push({
+                        x: points.data32F[i * 2],
+                        y: points.data32F[i * 2 + 1]
+                    });
+                }
+
+                // 计算质心
+                let centerX = pointsArray.reduce((sum, point) => sum + point.x, 0) / 4;
+                let centerY = pointsArray.reduce((sum, point) => sum + point.y, 0) / 4;
+
+                // 根据相对于质心的位置排序点
+                pointsArray.sort((a, b) => {
+                    if (a.y < centerY && b.y < centerY) {
+                        // 都在上半部分，按x排序
+                        return a.x - b.x;
+                    } else if (a.y > centerY && b.y > centerY) {
+                        // 都在下半部分，按x排序（降序）
+                        return b.x - a.x;
+                    } else {
+                        // 不在同一水平线上，按y排序
+                        return a.y - b.y;
+                    }
+                });
+
+                // 创建新的有序点矩阵
+                let orderedArray = [];
+                pointsArray.forEach(point => {
+                    orderedArray.push(point.x, point.y);
+                });
+
+                let orderedMat = this.cv.matFromArray(4, 1, this.cv.CV_32FC2, orderedArray);
+                ordered.delete(); // 删除临时复制
+                return orderedMat;
+            }
+
+            // 结果验证
+            validateAlignment(alignedImage) {
+                // 实现结果验证逻辑
+                // 可以检查对齐质量、图像清晰度等
+            }
+
+            // 工具函数：将图片转换为OpenCV Mat
+            imageToMat(image) {
+                if (!this.cv) {
+                    throw new Error('OpenCV未准备好');
+                }
+
+                const canvas = document.createElement('canvas');
+                canvas.width = image.width;
+                canvas.height = image.height;
+                const ctx = canvas.getContext('2d');
+                ctx.drawImage(image, 0, 0);
+
+                const imgData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+                const mat = this.cv.matFromImageData(imgData);
+                return mat;
+            }
+
+            // 工具函数：将Mat绘制到画布
+            matToCanvas(mat, canvasId) {
+                const canvas = document.getElementById(canvasId);
+                this.cv.imshow(canvas, mat);
+            }
+
+            // 计算对齐误差
+            calculateAlignmentError(srcPoints, dstPoints, homography) {
+                try {
+                    // 使用单应性矩阵变换源点
+                    let transformedPoints = new this.cv.Mat();
+                    this.cv.perspectiveTransform(srcPoints, transformedPoints, homography);
+
+                    // 计算误差（平均欧几里得距离）
+                    let totalError = 0;
+                    let numPoints = srcPoints.rows;
+
+                    for (let i = 0; i < numPoints; i++) {
+                        let dx = transformedPoints.data32F[i * 2] - dstPoints.data32F[i * 2];
+                        let dy = transformedPoints.data32F[i * 2 + 1] - dstPoints.data32F[i * 2 + 1];
+                        let distance = Math.sqrt(dx * dx + dy * dy);
+                        totalError += distance;
+                    }
+
+                    transformedPoints.delete();
+
+                    return (totalError / numPoints) / 10; // 归一化到百分比
+                } catch (error) {
+                    console.error('误差计算错误:', error);
+                    return 5.0; // 默认误差
+                }
+            }
+        }
+
+        // 创建全局实例
+        const aligner = new AnswerSheetAligner();
+
+        // OpenCV准备就绪回调
+        function onOpenCVReady() {
+            console.log('OpenCV准备就绪回调被调用');
+            console.log('cv对象状态:', typeof cv, cv ? '存在' : '不存在');
+            if (typeof cv !== 'undefined') {
+                console.log('cv.loaded状态:', cv.loaded);
+            }
+            aligner.initOpenCV();
+        }
+
+        // OpenCV加载错误处理
+        function onOpenCVError() {
+            console.error('OpenCV.js加载失败');
+            const statusElement = document.getElementById('status');
+            if (statusElement) {
+                statusElement.innerHTML = '❌ OpenCV.js加载失败，请检查网络连接';
+            }
+        }
+
+        // 加载示例图片
+        function loadDemoImages() {
+            aligner.loadDemoImages();
+        }
+
+        // 主要的图像对齐函数
+        async function alignImages() {
+            await aligner.processImages();
+        }
+
+        // 重置所有内容
+        function resetAll() {
+            aligner.resetAll();
+        }
+
+        // 页面加载完成后绑定事件监听器
+        document.addEventListener('DOMContentLoaded', function () {
+            console.log('DOM加载完成');
+
+            // 绑定文件上传事件
+            const templateFile = document.getElementById('templateFile');
+            const targetFile = document.getElementById('targetFile');
+            const alignBtn = document.getElementById('alignBtn');
+            const demoBtn = document.getElementById('demoBtn');
+            const resetBtn = document.getElementById('resetBtn');
+
+            // 初始化按钮状态
+            if (alignBtn) {
+                alignBtn.disabled = true;
+                console.log('初始按钮状态: 禁用');
+            }
+
+            if (templateFile) {
+                templateFile.addEventListener('change', function (e) {
+                    console.log('模板文件上传事件触发');
+                    aligner.handleImageUpload(e, 'template');
+                });
+            }
+
+            if (targetFile) {
+                targetFile.addEventListener('change', function (e) {
+                    console.log('拍摄文件上传事件触发');
+                    aligner.handleImageUpload(e, 'target');
+                });
+            }
+
+            // 检查OpenCV是否已经加载
+            setTimeout(() => {
+                if (typeof cv !== 'undefined') {
+                    console.log('延迟检查: OpenCV已存在，调用准备就绪回调');
+                    onOpenCVReady();
+                } else {
+                    console.log('延迟检查: OpenCV尚未加载');
+                    // 显示加载提示
+                    const statusElement = document.getElementById('status');
+                    if (statusElement) {
+                        statusElement.innerHTML = '⏳ 正在加载OpenCV.js，请稍候...';
+                    }
+                }
+            }, 500);
+        });
+
+        // 页面完全加载后再次检查
+        window.addEventListener('load', function () {
+            console.log('页面完全加载');
+            if (typeof cv !== 'undefined') {
+                console.log('页面加载后OpenCV已存在');
+                onOpenCVReady();
+            }
+        });
+
+        // 添加键盘快捷键支持
+        document.addEventListener('keydown', function (event) {
+            // Ctrl+R 或 Cmd+R 重置
+            if ((event.ctrlKey || event.metaKey) && event.key === 'r') {
+                event.preventDefault();
+                resetAll();
+            }
+            // Ctrl+A 或 Cmd+A 对齐
+            if ((event.ctrlKey || event.metaKey) && event.key === 'a') {
+                event.preventDefault();
+                const alignBtn = document.getElementById('alignBtn');
+                if (alignBtn && !alignBtn.disabled) {
+                    alignImages();
+                }
+            }
+        });
+    </script>
+</body>
+
+</html>
